@@ -22,12 +22,13 @@ public class ThreeDimensionalRenderer {
         this.lookAt = new Vector3(0, 0, 0);
         this.fov = 95;
         this.cameraDistance = settings.getCameraDistance();
-        this.rotationAngles = settings.getRotationAngles();
+        this.rotationAngles = new Vector3(settings.getRotationAnglesX(), settings.getRotationAnglesY(), settings.getRotationAnglesZ());
 
         this.screenDimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     public Vector3 rotate(int x, int y, int z) {
+        this.rotationAngles = new Vector3(settings.getRotationAnglesX(), settings.getRotationAnglesY(), settings.getRotationAnglesZ());
         // 3x3 rotation matrices in each x y z dimension
         double[][] rotationX = {
             {1, 0, 0},
@@ -47,7 +48,7 @@ public class ThreeDimensionalRenderer {
             {0, 0, 1},
         };
 
-        // this calculates the fot product of all the rotation vectors above with a point
+        // this calculates the dot product of all the rotation vectors above with a point
         Vector3 rotated = new Vector3(x-lookAt.x, y-lookAt.y, z-lookAt.z); // translated point
 
         // x rotation
@@ -72,9 +73,33 @@ public class ThreeDimensionalRenderer {
     }
 
     public Vector2 pointProjection(float x, float y, float z) {
-        float factor = fov/(cameraDistance+y);
-        x = x*factor+screenDimensions.x/2;
-        y = -y*factor+screenDimensions.y/2;
+        Vector3 projectedPoint = new Vector3(x, y, z);
+        float viewFar = 1000f;
+        float viewNear = 1f;
+
+        double[][] matrixProjection = {
+            {(screenDimensions.y/screenDimensions.x)*Math.toRadians(fov), 0, 0, 0},
+            {0, Math.toRadians(fov), 0, 0},
+            {0, viewFar / (viewFar - viewNear), 0, 1},
+            {0, 0, (-viewFar * viewNear) / (viewFar - viewNear), 0}
+        };
+
+        projectedPoint = multiplyMatrixWithVector(matrixProjection, projectedPoint);
+
         return new Vector2(x, y);
+    }
+
+    public Vector3 multiplyMatrixWithVector(double[][] m, Vector3 v) {
+        v.x = (float) (v.x * m[0][0] + v.y * m[1][0] + v.z * m[2][0] + m[3][0]);
+        v.y = (float) (v.x * m[0][1] + v.y * m[1][1] + v.z * m[2][1] + m[3][1]);
+        v.z = (float) (v.x * m[0][2] + v.y * m[1][2] + v.z * m[2][2] + m[3][2]);
+        float w = (float) (v.x * m[0][3] + v.y * m[1][3] + v.z * m[2][3] + m[3][3]);
+
+        if (w != 0) {
+            v.x /= w;
+            v.y /= w;
+            v.z /= w;
+        }
+        return v;
     }
 }

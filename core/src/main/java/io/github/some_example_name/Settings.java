@@ -103,8 +103,14 @@ public class Settings {
     public Integer getCameraDistance() {return this.cameraDistance;}
     public void setCameraDistance(Integer cameraDistance) {this.cameraDistance = cameraDistance;}
 
-    public Vector3 getRotationAngles() {return this.rotationAngles;}
-    public void setRotationAngles(Vector3 rotationAngles) {this.rotationAngles = rotationAngles;}
+    public float getRotationAnglesX() {return this.rotationAngles.x;}
+    public void setRotationAnglesX(float angle) {this.rotationAngles.x = angle;}
+
+    public float getRotationAnglesY() {return this.rotationAngles.y;}
+    public void setRotationAnglesY(float angle) {this.rotationAngles.y = angle;}
+
+    public float getRotationAnglesZ() {return this.rotationAngles.z;}
+    public void setRotationAnglesZ(float angle) {this.rotationAngles.z = angle;}
 
     public boolean getSimulationRunning() {return this.simulationRunning;}
     public void setSimulationRunning(boolean simulationRunning) {this.simulationRunning = simulationRunning;}
