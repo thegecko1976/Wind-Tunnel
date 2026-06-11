@@ -72,7 +72,7 @@ public class ThreeDimensionalRenderer {
         return rotated;
     }
 
-    public Vector2 pointProjection(float x, float y, float z) {
+    public Vector3 pointProjection(float x, float y, float z) {
         Vector3 projectedPoint = new Vector3(x, y, z);
         float viewFar = 1000f;
         float viewNear = 1f;
@@ -80,13 +80,18 @@ public class ThreeDimensionalRenderer {
         double[][] matrixProjection = {
             {(screenDimensions.y/screenDimensions.x)*Math.toRadians(fov), 0, 0, 0},
             {0, Math.toRadians(fov), 0, 0},
-            {0, viewFar / (viewFar - viewNear), 0, 1},
-            {0, 0, (-viewFar * viewNear) / (viewFar - viewNear), 0}
+            {0, viewFar/(viewFar-viewNear), 0, 1},
+            {0, 0, (-viewFar*viewNear)/(viewFar-viewNear), 0}
         };
 
         projectedPoint = multiplyMatrixWithVector(matrixProjection, projectedPoint);
 
-        return new Vector2(x, y);
+        projectedPoint.x += 1.0f;
+        projectedPoint.y += 1.0f;
+        projectedPoint.x *= 0.5f*screenDimensions.x;
+        projectedPoint.y *= 0.5f*screenDimensions.y;
+
+        return projectedPoint;
     }
 
     public Vector3 multiplyMatrixWithVector(double[][] m, Vector3 v) {

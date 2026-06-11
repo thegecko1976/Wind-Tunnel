@@ -58,7 +58,7 @@ public class LatticeBoltzmannCFDSolver {
 
     public void render(ShapeRenderer sr) {
         Vector3 rotatedPoint;
-        Vector2 screenPos;
+        Vector3 screenPos;
         for (int x=0; x<settings.getResolution().x; x++) {
             for (int y=0; y<settings.getResolution().y; y++) {
                 for (int z=0; z<settings.getResolution().z; z++) {
