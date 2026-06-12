@@ -9,9 +9,8 @@ public class ThreeDimensionalRenderer {
 
     private Settings settings;
 
-    private Vector3 lookAt;
+    private Vector3 cameraPosition;
     private Integer fov;
-    private Integer cameraDistance;
     private Vector3 rotationAngles;
 
     private Vector2 screenDimensions;
@@ -19,15 +18,14 @@ public class ThreeDimensionalRenderer {
     public ThreeDimensionalRenderer() {
         this.settings = Settings.getInstance();
 
-        this.lookAt = new Vector3(0, 0, 0);
-        this.fov = 95;
-        this.cameraDistance = settings.getCameraDistance();
-        this.rotationAngles = new Vector3(settings.getRotationAnglesX(), settings.getRotationAnglesY(), settings.getRotationAnglesZ());
+        this.rotationAngles = settings.getRotationAngles();
+        this.cameraPosition = settings.getCameraPosition();
+        this.fov = settings.getFov();
 
         this.screenDimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
-    public Vector3 rotate(int x, int y, int z) {
+    public Vector3 rotate(float x, float y, float z) {
         this.rotationAngles = new Vector3(settings.getRotationAnglesX(), settings.getRotationAnglesY(), settings.getRotationAnglesZ());
         // 3x3 rotation matrices in each x y z dimension
         double[][] rotationX = {
@@ -49,7 +47,7 @@ public class ThreeDimensionalRenderer {
         };
 
         // this calculates the dot product of all the rotation vectors above with a point
-        Vector3 rotated = new Vector3(x-lookAt.x, y-lookAt.y, z-lookAt.z); // translated point
+        Vector3 rotated = new Vector3(x-cameraPosition.x, y-cameraPosition.y, z-cameraPosition.z); // translated point
 
         // x rotation
         rotated.x = (float) (rotationX[0][0]*rotated.x + rotationX[0][1]*rotated.y + rotationX[0][2]*rotated.z);
@@ -65,9 +63,9 @@ public class ThreeDimensionalRenderer {
         rotated.z = (float) (rotationZ[2][0]*rotated.x + rotationZ[2][1]*rotated.y + rotationZ[2][2]*rotated.z);
 
         // translate back
-        rotated.x = rotated.x+lookAt.x;
-        rotated.y = rotated.y+lookAt.y;
-        rotated.z = rotated.z+lookAt.z;
+        rotated.x = rotated.x+cameraPosition.x;
+        rotated.y = rotated.y+cameraPosition.y;
+        rotated.z = rotated.z+cameraPosition.z;
 
         return rotated;
     }
