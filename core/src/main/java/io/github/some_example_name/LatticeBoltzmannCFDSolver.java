@@ -62,6 +62,7 @@ public class LatticeBoltzmannCFDSolver {
         for (int x=0; x<settings.getResolution().x; x++) {
             for (int y=0; y<settings.getResolution().y; y++) {
                 for (int z=0; z<settings.getResolution().z; z++) {
+                    if (!(x == 0 || y == 0 || z == 0 || x == settings.getResolution().x-1 || y == settings.getResolution().y-1 || z == settings.getResolution().z-1)) {continue;}
                     // calculate colour here
                     sr.setColor(Color.WHITE);
                     if (settings.getSolver() == "2D LBM") {
