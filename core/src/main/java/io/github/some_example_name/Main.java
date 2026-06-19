@@ -45,23 +45,30 @@ public class Main extends ApplicationAdapter {
     @Override
     public void render() {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
+        Gdx.graphics.setTitle("Wind Tunnel FPS: " + Gdx.graphics.getFramesPerSecond());
 
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            settings.setRotationAnglesY((float) (settings.getRotationAnglesY()+Math.toRadians(1)));
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+            settings.setRotationAnglesX((float) (settings.getRotationAnglesX()-(Math.PI/180)));
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            settings.setRotationAnglesY((float) (settings.getRotationAnglesY()-Math.toRadians(1)));
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+            settings.setRotationAnglesX((float) (settings.getRotationAnglesX()+(Math.PI/180)));
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+            settings.setRotationAnglesY((float) (settings.getRotationAnglesY()+(Math.PI/180)));
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+            settings.setRotationAnglesY((float) (settings.getRotationAnglesY()-(Math.PI/180)));
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.Q)) {
+            settings.setRotationAnglesZ((float) (settings.getRotationAnglesZ()-(Math.PI/180)));
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.E)) {
+            settings.setRotationAnglesZ((float) (settings.getRotationAnglesZ()+(Math.PI/180)));
         }
         if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            settings.setRotationAnglesZ((float) (settings.getRotationAnglesZ()+Math.toRadians(1)));
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            settings.setRotationAnglesZ((float) (settings.getRotationAnglesZ()-Math.toRadians(1)));
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.Z)) {
             settings.setCameraDistance(settings.getCameraDistance()-1);
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.X)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
             settings.setCameraDistance(settings.getCameraDistance()+1);
         }
 

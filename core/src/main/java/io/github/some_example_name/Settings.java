@@ -38,7 +38,7 @@ public class Settings {
     }
 
     public void reset() {
-        this.resolution = new Vector3(this.resolutionValues[3][0], this.resolutionValues[3][1], 1);
+        this.resolution = new Vector3(this.resolutionValues[2][0], this.resolutionValues[2][1], 1);
         this.solver = this.solverValues[0];
         this.flowSpeed = 0.100f;
         this.viscosity = 0.020f;
