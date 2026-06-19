@@ -79,7 +79,8 @@ public class Main extends ApplicationAdapter {
 
         if (!nextMenu.equals(menu)) {
             if (menu.equals("main") && (nextMenu.equals("levels") || nextMenu.equals("freeplay"))) {
-                settings.reset();
+                freeplayMenu.reinitialise();
+                levelsMenu.reinitialise();
                 settings.setSimulationRunning(false);
             }
             if ("back".equals(nextMenu)) {
