@@ -42,16 +42,12 @@ public class LatticeBoltzmannCFDSolver {
                 for (int z=0; z<settings.getResolution().z; z++) {
                     densities[x][y][z] = new float[neighbours];
                     for (int count=0; count<neighbours; count++) {
-                        densities[x][y][z][count] = settings.getFlowSpeed()/9;
+                        densities[x][y][z][count] = settings.getFlowSpeed()/neighbours;
                     }
                 }
             }
         }
-        String[] pos;
-        for (String xyz : barriers) {
-            pos = xyz.split(" ");
-            Arrays.fill(densities[Integer.parseInt(pos[0])][Integer.parseInt(pos[1])][Integer.parseInt(pos[2])], 0);
-        }
+        barriers = zeroBarriers();
     }
 
     public void render(ShapeRenderer sr) {
@@ -79,6 +75,15 @@ public class LatticeBoltzmannCFDSolver {
 
     public void addBarrier(Integer x, Integer y, Integer z) {
         barriers.add(x + " " + y + " " + z);
+    }
+
+    public ArrayList<String> zeroBarriers() {
+        String[] pos;
+        for (String xyz : barriers) {
+            pos = xyz.split(" ");
+            Arrays.fill(densities[Integer.parseInt(pos[0])][Integer.parseInt(pos[1])][Integer.parseInt(pos[2])], 0);
+        }
+        return barriers;
     }
 }
 
