@@ -31,10 +31,10 @@ public class AboutMenu implements Menu {
 
         batch.begin();
             util.renderText(batch, "about", Color.WHITE, util.getScreenDimensions().x/2, 953, 96, "centre");
-            util.renderText(batch, "This is a 2D incompressible Wind Tunnel made by Nathan Becker for my ", Color.WHITE, util.getScreenDimensions().x/2, 850, 32, "centre");
-            util.renderText(batch, "A-Level Computer Science NEA.", Color.WHITE, util.getScreenDimensions().x/2, 800, 32, "centre");
+            util.renderText(batch, "This is a 2D and 3D incompressible Wind Tunnel made by Nathan Becker", Color.WHITE, util.getScreenDimensions().x/2, 850, 32, "centre");
+            util.renderText(batch, "for my A-Level Computer Science NEA.", Color.WHITE, util.getScreenDimensions().x/2, 800, 32, "centre");
             util.renderText(batch, "The Wind Tunnel uses computational fluid dynamics such as the", Color.WHITE, util.getScreenDimensions().x/2, 700, 32, "centre");
-            util.renderText(batch, "Lattice-Boltzmann equations to simulate a fluid flowing past an object", Color.WHITE, util.getScreenDimensions().x/2, 650, 32, "centre");
+            util.renderText(batch, "Lattice-Boltzmann equations to simulate a fluid flowing around an object", Color.WHITE, util.getScreenDimensions().x/2, 650, 32, "centre");
             util.renderText(batch, "based on variable flow speed and viscosity.", Color.WHITE, util.getScreenDimensions().x/2, 600, 32, "centre");
             util.renderText(batch, "xxx lines of code", Color.WHITE, util.getScreenDimensions().x/2, 500, 32, "centre");
             util.renderText(batch, "~ xxx hrs of coding", Color.WHITE, util.getScreenDimensions().x/2, 450, 32, "centre");
