@@ -7,6 +7,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class LatticeBoltzmannCFDSolver {
+
+    /*
+    TO DO:
+    - research how to initialise a cell with the correct starting densities
+    - research why each relative internal cell direction gets a specific weight
+    - create a collide function
+    - create a stream function
+    - create a bounce function
+     */
+
     private MenuUtil util;
     private Settings settings;
     private ThreeDimensionalRenderer renderer;
@@ -19,17 +29,17 @@ public class LatticeBoltzmannCFDSolver {
         {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {1, -1, 0}, {-1, 0, 0}, {-1, 1, 0}, {-1, -1, 0}, {0, 1, 0}, {0, -1, 0},
         {0, 0, -1}, {1, 0, -1}, {-1, 0, -1}, {0, 1, -1}, {0, -1, -1}, {0, 0, 1}, {1, 0, 1}, {-1, 0, 1}, {0, 1, 1}, {0, -1, 1}
     };
-    private ArrayList<String> barriers = new ArrayList<>(); // the xyz coords are stored as a String, separated by spaces, for example: 32 2 54
+    private ArrayList<String> barriers = new ArrayList<>(); // the xyz coords are stored as a String, separated by spaces, for example, 32 2 54
     private Integer neighbours;
 
     public LatticeBoltzmannCFDSolver() {
         this.util = new MenuUtil();
         this.settings = Settings.getInstance();
         this.renderer = new ThreeDimensionalRenderer();
-        initialiseCells();
+        initialiseFluid();
     }
 
-    public void initialiseCells() {
+    public void initialiseFluid() {
         if (settings.getSolver() == "2D LBM") {
             neighbours = 9;
         } else {
@@ -47,7 +57,7 @@ public class LatticeBoltzmannCFDSolver {
                 }
             }
         }
-        barriers = zeroBarriers();
+        densities = zeroBarriers();
     }
 
     public void render(ShapeRenderer sr) {
@@ -77,13 +87,13 @@ public class LatticeBoltzmannCFDSolver {
         barriers.add(x + " " + y + " " + z);
     }
 
-    public ArrayList<String> zeroBarriers() {
+    public float[][][][] zeroBarriers() {
         String[] pos;
         for (String xyz : barriers) {
             pos = xyz.split(" ");
             Arrays.fill(densities[Integer.parseInt(pos[0])][Integer.parseInt(pos[1])][Integer.parseInt(pos[2])], 0);
         }
-        return barriers;
+        return densities;
     }
 }
 

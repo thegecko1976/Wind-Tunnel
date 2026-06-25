@@ -112,5 +112,5 @@ public class LevelsMenu implements Menu {
         return levelNumber;
     }
 
-    public void reinitialise() {cfdSolver.initialiseCells();}
+    public void reinitialise() {cfdSolver.initialiseFluid();}
 }

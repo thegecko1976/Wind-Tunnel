@@ -84,5 +84,5 @@ public class FreeplayMenu implements Menu {
         return "freeplay";
     }
 
-    public void reinitialise() {cfdSolver.initialiseCells();}
+    public void reinitialise() {cfdSolver.initialiseFluid();}
 }
