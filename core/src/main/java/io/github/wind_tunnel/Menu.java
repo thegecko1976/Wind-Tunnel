@@ -1,4 +1,4 @@
-package io.github.some_example_name;
+package io.github.wind_tunnel;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;

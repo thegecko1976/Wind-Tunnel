@@ -1,4 +1,4 @@
-package io.github.some_example_name;
+package io.github.wind_tunnel;
 
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
@@ -32,6 +32,9 @@ public class LatticeBoltzmannCFDSolver {
     private ArrayList<String> barriers = new ArrayList<>(); // the xyz coords are stored as a String, separated by spaces, for example, 32 2 54
     private Integer neighbours;
 
+    private Vector3 rotatedPoint;
+    private Vector2 screenPos;
+
     public LatticeBoltzmannCFDSolver() {
         this.util = new MenuUtil();
         this.settings = Settings.getInstance();
@@ -62,8 +65,7 @@ public class LatticeBoltzmannCFDSolver {
 
     public void render(ShapeRenderer sr) {
         if (settings.getSolver() == "2D LBM") {cellDimensions = 1920/settings.getResolution().x;}
-        Vector3 rotatedPoint;
-        Vector2 screenPos;
+
         for (int x=0; x<settings.getResolution().x; x++) {
             for (int y=0; y<settings.getResolution().y; y++) {
                 for (int z=0; z<settings.getResolution().z; z++) {

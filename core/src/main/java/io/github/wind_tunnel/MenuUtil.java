@@ -1,4 +1,4 @@
-package io.github.some_example_name;
+package io.github.wind_tunnel;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
