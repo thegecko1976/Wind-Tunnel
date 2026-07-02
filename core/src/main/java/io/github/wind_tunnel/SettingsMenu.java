@@ -119,7 +119,7 @@ public class SettingsMenu implements Menu {
 
             if (settings.getSolver() == "2D LBM") {
                 resolutionZValue = "";
-                settings.setResolution(new Vector3(settings.getResolution().x, settings.getResolution().y, 0));
+                settings.setResolution(new Vector3(settings.getResolution().x, settings.getResolution().y, 1));
             } else {
                 resolutionZValue = "x" + (int) settings.getResolution().z;
             }
