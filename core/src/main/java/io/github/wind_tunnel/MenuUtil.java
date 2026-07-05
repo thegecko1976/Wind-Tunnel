@@ -18,7 +18,7 @@ public class MenuUtil {
 
     public MenuUtil() {
         this.screenDimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        this.font = new BitmapFont(Gdx.files.internal("assets/fonts/inter-semi-bold.fnt"));
+        this.font = new BitmapFont(Gdx.files.internal("fonts/inter-semi-bold.fnt"));
         this.layout = new GlyphLayout();
     }
 
@@ -72,7 +72,7 @@ public class MenuUtil {
 
     public boolean isButtonClicked(Rectangle button) {return (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && button.contains(Gdx.input.getX(), screenDimensions.y-Gdx.input.getY()));}
 
-    public Texture loadIcon(String name) {return new Texture(Gdx.files.internal("assets/icons/" + name + ".png"));}
+    public Texture loadIcon(String name) {return new Texture(Gdx.files.internal("icons/" + name + ".png"));}
 
     public void renderIcon(SpriteBatch batch, Texture icon, float x, float y) {
         x -= 0.5f*icon.getWidth();

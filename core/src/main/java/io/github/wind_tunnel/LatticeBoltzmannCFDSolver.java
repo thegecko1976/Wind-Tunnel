@@ -18,7 +18,6 @@ public class LatticeBoltzmannCFDSolver {
     - create a bounce function
      */
 
-    private MenuUtil util;
     private Settings settings;
     private ThreeDimensionalRenderer renderer;
 
@@ -53,8 +52,12 @@ public class LatticeBoltzmannCFDSolver {
     int numOfColors = 600;
     ArrayList<Color> colours = new ArrayList<>();
 
+    // the cuboid drawn in 3D mode is always scaled to this bounding radius, regardless of
+    // simulation resolution - otherwise a large grid (e.g. 128x72x72) ends up far bigger than
+    // cameraDistance and most of its far side gets clipped by the near plane at every rotation
+    private static final float TARGET_RENDER_RADIUS = 5f;
+
     public LatticeBoltzmannCFDSolver() {
-        this.util = new MenuUtil();
         this.settings = Settings.getInstance();
         this.renderer = new ThreeDimensionalRenderer();
         initialiseFluid();
@@ -131,34 +134,55 @@ public class LatticeBoltzmannCFDSolver {
     public void render(ShapeRenderer sr) {
         if (settings.getSolver() == "2D LBM") {
             cellDimensions = 1920/settings.getResolution().x;
-        } /*else {
-            origin = renderer.rotate(-(settings.getResolution().x/2), -(settings.getResolution().x/2), -(settings.getResolution().x/2));
-            originX = renderer.rotate(settings.getResolution().x/2, -(settings.getResolution().x/2), -(settings.getResolution().x/2));
-            originY = renderer.rotate(-(settings.getResolution().x/2), settings.getResolution().x/2, -(settings.getResolution().x/2));
-            originZ = renderer.rotate(-(settings.getResolution().x/2), -(settings.getResolution().x/2), settings.getResolution().x/2);
-        }*/
 
-        for (int x=0; x<settings.getResolution().x; x++) {
-            for (int y=0; y<settings.getResolution().y; y++) {
-                for (int z=0; z<settings.getResolution().z; z++) {
-                    if (!(x == 0 || y == 0 || z == 0 || x == settings.getResolution().x-1 || y == settings.getResolution().y-1 || z == settings.getResolution().z-1)) {continue;}
-                    //sr.setColor(colours.get(calculateColourIndex(cell's xVelocity)));
-                    sr.setColor(1f, 1f, 1f, 1f);
-                    if (settings.getSolver() == "2D LBM") {
+            for (int x=0; x<settings.getResolution().x; x++) {
+                for (int y=0; y<settings.getResolution().y; y++) {
+                    for (int z=0; z<settings.getResolution().z; z++) {
+                        if (!(x == 0 || y == 0 || z == 0 || x == settings.getResolution().x-1 || y == settings.getResolution().y-1 || z == settings.getResolution().z-1)) {continue;}
+                        sr.setColor(1f, 1f, 1f, 1f);
                         sr.circle((x+0.5f)*cellDimensions, (y+0.5f)*cellDimensions, 1);
-                        //sr.rect(x*cellDimensions, y*cellDimensions, cellDimensions, cellDimensions);
-                    } else {
-                        /*rotatedPoint.x = (originX.x*x + originY.y*x + originZ.z*x);
-                        rotatedPoint.y = (originX.x*y + originY.y*y + originZ.z*y);
-                        rotatedPoint.z = (originX.x*z + originY.y*z + originZ.z*z);*/
-                        rotatedPoint = renderer.rotate(x-(settings.getResolution().x/2), y-(settings.getResolution().y/2), z-(settings.getResolution().z/2));
-                        screenPos = renderer.pointProjection(rotatedPoint);
-                        if (screenPos == null) continue;
-                        sr.circle(screenPos.x, screenPos.y, 1);
                     }
                 }
             }
+        } else {
+            int rx = (int) settings.getResolution().x;
+            int ry = (int) settings.getResolution().y;
+            int rz = (int) settings.getResolution().z;
+            renderer.updateFrameState();
+            sr.setColor(1f, 1f, 1f, 1f);
+
+            float boundingRadius = (float) Math.sqrt((rx/2f)*(rx/2f) + (ry/2f)*(ry/2f) + (rz/2f)*(rz/2f));
+            float scale = TARGET_RENDER_RADIUS / boundingRadius;
+
+            // z==0 / z==rz-1 faces: full x,y range (owns all edges/corners on these two planes)
+            for (int x=0; x<rx; x++) {
+                for (int y=0; y<ry; y++) {
+                    drawLatticePoint(sr, x, y, 0, rx, ry, rz, scale);
+                    drawLatticePoint(sr, x, y, rz-1, rx, ry, rz, scale);
+                }
+            }
+            // y==0 / y==ry-1 faces: skip z rows already drawn above
+            for (int x=0; x<rx; x++) {
+                for (int z=1; z<rz-1; z++) {
+                    drawLatticePoint(sr, x, 0, z, rx, ry, rz, scale);
+                    drawLatticePoint(sr, x, ry-1, z, rx, ry, rz, scale);
+                }
+            }
+            // x==0 / x==rx-1 faces: skip y,z rows already drawn above
+            for (int y=1; y<ry-1; y++) {
+                for (int z=1; z<rz-1; z++) {
+                    drawLatticePoint(sr, 0, y, z, rx, ry, rz, scale);
+                    drawLatticePoint(sr, rx-1, y, z, rx, ry, rz, scale);
+                }
+            }
         }
+    }
+
+    private void drawLatticePoint(ShapeRenderer sr, int x, int y, int z, int rx, int ry, int rz, float scale) {
+        rotatedPoint = renderer.rotate((x-(rx/2f))*scale, (y-(ry/2f))*scale, (z-(rz/2f))*scale);
+        screenPos = renderer.pointProjection(rotatedPoint);
+        if (screenPos == null) return;
+        sr.circle(screenPos.x, screenPos.y, 1);
     }
 
     public ArrayList<Color> calculateColours(ArrayList<Color> colours, int numOfColours) {

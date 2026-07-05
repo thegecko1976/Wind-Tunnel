@@ -48,6 +48,8 @@ run {
   //setIgnoreExitValue(true)
 
   if (os.contains('mac')) jvmArgs += "-XstartOnFirstThread"
+  minHeapSize = '4g'
+  maxHeapSize = '26g'
 }
 
 jar {
