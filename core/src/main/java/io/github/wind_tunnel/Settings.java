@@ -1,10 +1,10 @@
 package io.github.wind_tunnel;
 
-import com.badlogic.gdx.math.Vector3;
+import com.jme3.math.Vector3f;
 
 public class Settings {
 
-    private Vector3 resolution;
+    private Vector3f resolution;
     private String solver;
     private float flowSpeed;
     private float viscosity;
@@ -19,10 +19,10 @@ public class Settings {
 
     private boolean simulationRunning = false;
 
-    private Vector3 rotationAngles;
+    private Vector3f rotationAngles;
     private Integer cameraDistance;
     private Integer fov;
-    private Vector3 origin;
+    private Vector3f origin;
 
     private static Settings instance;
 
@@ -38,7 +38,7 @@ public class Settings {
     }
 
     public void reset() {
-        this.resolution = new Vector3(this.resolutionValues[2][0], this.resolutionValues[2][1], 1);
+        this.resolution = new Vector3f(this.resolutionValues[2][0], this.resolutionValues[2][1], 1);
         this.solver = this.solverValues[0];
         this.flowSpeed = 0.100f;
         this.viscosity = 0.020f;
@@ -46,10 +46,10 @@ public class Settings {
         this.mode = this.modeValues[0];
         this.showFlowLines = false;
 
-        this.rotationAngles = new Vector3(0, 0, 0);
+        this.rotationAngles = new Vector3f(0, 0, 0);
         this.cameraDistance = 8;
         this.fov = 95;
-        this.origin = new Vector3(0, 0, 0);
+        this.origin = new Vector3f(0, 0, 0);
     }
 
     public String cycleOptions(Integer change, String currentValue, String[] possibleValues) {
@@ -91,21 +91,21 @@ public class Settings {
         }
         if (change == 1) {
             if (index == resolutionValues.length-1) {
-                this.resolution = new Vector3(resolutionValues[0][0], resolutionValues[0][1], resolutionValues[0][1]);
+                this.resolution = new Vector3f(resolutionValues[0][0], resolutionValues[0][1], resolutionValues[0][1]);
             } else {
-                this.resolution = new Vector3(resolutionValues[index+1][0], resolutionValues[index+1][1], resolutionValues[index+1][1]);
+                this.resolution = new Vector3f(resolutionValues[index+1][0], resolutionValues[index+1][1], resolutionValues[index+1][1]);
             }
         } else if (change == -1) {
             if (index == 0) {
-                this.resolution = new Vector3(resolutionValues[resolutionValues.length-1][0], resolutionValues[resolutionValues.length-1][1], resolutionValues[resolutionValues.length-1][1]);
+                this.resolution = new Vector3f(resolutionValues[resolutionValues.length-1][0], resolutionValues[resolutionValues.length-1][1], resolutionValues[resolutionValues.length-1][1]);
             } else {
-                this.resolution = new Vector3(resolutionValues[index-1][0], resolutionValues[index-1][1], resolutionValues[index-1][1]);
+                this.resolution = new Vector3f(resolutionValues[index-1][0], resolutionValues[index-1][1], resolutionValues[index-1][1]);
             }
         }
     }
 
-    public Vector3 getOrigin() {return this.origin;}
-    public void setOrigin(Vector3 origin) {this.origin = origin;}
+    public Vector3f getOrigin() {return this.origin;}
+    public void setOrigin(Vector3f origin) {this.origin = origin;}
 
     public Integer getCameraDistance() {return this.cameraDistance;}
     public void setCameraDistance(Integer cameraDistance) {if (cameraDistance > 0) {this.cameraDistance = cameraDistance;}}
@@ -113,8 +113,8 @@ public class Settings {
     public Integer getFov() {return this.fov;}
     public void setFov(Integer fov) {this.fov = fov;}
 
-    public Vector3 getRotationAngles() {return this.rotationAngles;}
-    public void setRotationAngles(Vector3 angles) {this.rotationAngles = angles;}
+    public Vector3f getRotationAngles() {return this.rotationAngles;}
+    public void setRotationAngles(Vector3f angles) {this.rotationAngles = angles;}
 
     public float getRotationAnglesX() {return this.rotationAngles.x;}
     public void setRotationAnglesX(float angle) {this.rotationAngles.x = angle;}
@@ -131,8 +131,8 @@ public class Settings {
     public String getSolver() {return this.solver;}
     public void setSolver(String solver) {this.solver = solver;}
 
-    public Vector3 getResolution() {return this.resolution;}
-    public void setResolution(Vector3 resolution) {this.resolution = resolution;}
+    public Vector3f getResolution() {return this.resolution;}
+    public void setResolution(Vector3f resolution) {this.resolution = resolution;}
 
     public float getFlowSpeed() {return this.flowSpeed;}
     public void setFlowSpeed(float flowSpeed) {this.flowSpeed = flowSpeed;}

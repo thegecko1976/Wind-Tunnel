@@ -2,15 +2,16 @@
 eclipse.project.name = appName + '-core'
 
 dependencies {
-  api "com.badlogicgames.gdx:gdx:$gdxVersion"
+  api "org.jmonkeyengine:jme3-core:$jmeVersion"
+  api "org.jmonkeyengine:jme3-desktop:$jmeVersion"
+  api "com.simsilica:lemur:$lemurVersion"
+  api "com.simsilica:lemur-proto:$lemurProtoVersion"
+  // Lemur's bundled "glass" style is defined in Groovy scripts, loaded at runtime via JSR-223.
+  runtimeOnly "org.apache.groovy:groovy-jsr223:5.0.7"
 
   testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
   testImplementation "org.mockito:mockito-core:5.11.0"
   testRuntimeOnly "org.junit.platform:junit-platform-launcher"
-
-  if(enableGraalNative == 'true') {
-    implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
-  }
 }
 
 test {

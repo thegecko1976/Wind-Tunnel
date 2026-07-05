@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "gradle",
+			"id": "/Users/dbecker1976/projects/Wind-TunnelcompileJavaWind-Tunnel",
+			"script": "compileJava",
+			"description": "Compiles main Java source.",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"project": "Wind-Tunnel",
+			"buildFile": "/Users/dbecker1976/projects/Wind-Tunnel/build.gradle",
+			"rootProject": "Wind-Tunnel",
+			"projectFolder": "/Users/dbecker1976/projects/Wind-Tunnel",
+			"workspaceFolder": "/Users/dbecker1976/projects/Wind-Tunnel",
+			"args": "",
+			"javaDebug": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"label": "gradle: compileJava"
+		}
+	]
+}

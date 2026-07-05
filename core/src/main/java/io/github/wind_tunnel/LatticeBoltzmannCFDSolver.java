@@ -1,11 +1,13 @@
 package io.github.wind_tunnel;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
+import com.jme3.math.ColorRGBA;
+import com.jme3.scene.Mesh;
+import com.jme3.scene.VertexBuffer;
+import com.jme3.util.BufferUtils;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class LatticeBoltzmannCFDSolver {
 
@@ -19,9 +21,6 @@ public class LatticeBoltzmannCFDSolver {
      */
 
     private Settings settings;
-    private ThreeDimensionalRenderer renderer;
-
-    private float cellDimensions;
 
     // array of densities named by their relative offset to the cell (in 3D)
     private double[][][][] densities;
@@ -31,13 +30,6 @@ public class LatticeBoltzmannCFDSolver {
     };
     private ArrayList<String> barriers = new ArrayList<>(); // the xyz coords are stored as a String, separated by spaces, for example, 32 2 54
     private Integer neighbours;
-
-    private Vector3 rotatedPoint = new Vector3();
-    private Vector2 screenPos;
-    private Vector3 origin;
-    private Vector3 originX;
-    private Vector3 originY;
-    private Vector3 originZ;
 
     private float four9ths = 4/9f;
     private float one9th = 1/9f;
@@ -50,16 +42,15 @@ public class LatticeBoltzmannCFDSolver {
     private double one_3v3vv;
 
     int numOfColors = 600;
-    ArrayList<Color> colours = new ArrayList<>();
+    ArrayList<ColorRGBA> colours = new ArrayList<>();
 
-    // the cuboid drawn in 3D mode is always scaled to this bounding radius, regardless of
-    // simulation resolution - otherwise a large grid (e.g. 128x72x72) ends up far bigger than
+    // the point cloud is always scaled to this bounding radius, regardless of simulation
+    // resolution - otherwise a large grid (e.g. 128x72x72) ends up far bigger than
     // cameraDistance and most of its far side gets clipped by the near plane at every rotation
     private static final float TARGET_RENDER_RADIUS = 5f;
 
     public LatticeBoltzmannCFDSolver() {
         this.settings = Settings.getInstance();
-        this.renderer = new ThreeDimensionalRenderer();
         initialiseFluid();
         colours = calculateColours(colours, numOfColors);
     }
@@ -131,61 +122,66 @@ public class LatticeBoltzmannCFDSolver {
         densities = zeroBarriers();
     }
 
-    public void render(ShapeRenderer sr) {
-        if (settings.getSolver() == "2D LBM") {
-            cellDimensions = 1920/settings.getResolution().x;
+    // pure-data boundary-shell selection, independent of any rendering API - the same
+    // predicate already correctly covers the 2D case too, since resolution.z == 1 there
+    // makes z==0 and z==rz-1 the same plane - guarded below so that plane isn't double-counted.
+    public List<int[]> collectBoundaryShellCells(int rx, int ry, int rz) {
+        List<int[]> cells = new ArrayList<>();
 
-            for (int x=0; x<settings.getResolution().x; x++) {
-                for (int y=0; y<settings.getResolution().y; y++) {
-                    for (int z=0; z<settings.getResolution().z; z++) {
-                        if (!(x == 0 || y == 0 || z == 0 || x == settings.getResolution().x-1 || y == settings.getResolution().y-1 || z == settings.getResolution().z-1)) {continue;}
-                        sr.setColor(1f, 1f, 1f, 1f);
-                        sr.circle((x+0.5f)*cellDimensions, (y+0.5f)*cellDimensions, 1);
-                    }
-                }
-            }
-        } else {
-            int rx = (int) settings.getResolution().x;
-            int ry = (int) settings.getResolution().y;
-            int rz = (int) settings.getResolution().z;
-            renderer.updateFrameState();
-            sr.setColor(1f, 1f, 1f, 1f);
-
-            float boundingRadius = (float) Math.sqrt((rx/2f)*(rx/2f) + (ry/2f)*(ry/2f) + (rz/2f)*(rz/2f));
-            float scale = TARGET_RENDER_RADIUS / boundingRadius;
-
-            // z==0 / z==rz-1 faces: full x,y range (owns all edges/corners on these two planes)
-            for (int x=0; x<rx; x++) {
-                for (int y=0; y<ry; y++) {
-                    drawLatticePoint(sr, x, y, 0, rx, ry, rz, scale);
-                    drawLatticePoint(sr, x, y, rz-1, rx, ry, rz, scale);
-                }
-            }
-            // y==0 / y==ry-1 faces: skip z rows already drawn above
-            for (int x=0; x<rx; x++) {
-                for (int z=1; z<rz-1; z++) {
-                    drawLatticePoint(sr, x, 0, z, rx, ry, rz, scale);
-                    drawLatticePoint(sr, x, ry-1, z, rx, ry, rz, scale);
-                }
-            }
-            // x==0 / x==rx-1 faces: skip y,z rows already drawn above
-            for (int y=1; y<ry-1; y++) {
-                for (int z=1; z<rz-1; z++) {
-                    drawLatticePoint(sr, 0, y, z, rx, ry, rz, scale);
-                    drawLatticePoint(sr, rx-1, y, z, rx, ry, rz, scale);
-                }
+        // z==0 / z==rz-1 faces: full x,y range (owns all edges/corners on these two planes)
+        for (int x=0; x<rx; x++) {
+            for (int y=0; y<ry; y++) {
+                cells.add(new int[]{x, y, 0});
+                if (rz > 1) cells.add(new int[]{x, y, rz-1});
             }
         }
+        // y==0 / y==ry-1 faces: skip z rows already added above
+        for (int x=0; x<rx; x++) {
+            for (int z=1; z<rz-1; z++) {
+                cells.add(new int[]{x, 0, z});
+                if (ry > 1) cells.add(new int[]{x, ry-1, z});
+            }
+        }
+        // x==0 / x==rx-1 faces: skip y,z rows already added above
+        for (int y=1; y<ry-1; y++) {
+            for (int z=1; z<rz-1; z++) {
+                cells.add(new int[]{0, y, z});
+                if (rx > 1) cells.add(new int[]{rx-1, y, z});
+            }
+        }
+
+        return cells;
     }
 
-    private void drawLatticePoint(ShapeRenderer sr, int x, int y, int z, int rx, int ry, int rz, float scale) {
-        rotatedPoint = renderer.rotate((x-(rx/2f))*scale, (y-(ry/2f))*scale, (z-(rz/2f))*scale);
-        screenPos = renderer.pointProjection(rotatedPoint);
-        if (screenPos == null) return;
-        sr.circle(screenPos.x, screenPos.y, 1);
+    // builds the boundary-shell point cloud once (called from initialiseFluid()'s caller on
+    // resolution/barrier changes, not every frame) - rotation/projection/culling are handled
+    // by jME's own Camera + scene graph once this mesh is attached to a Geometry/Node.
+    public Mesh buildPointCloudMesh() {
+        int rx = (int) settings.getResolution().x;
+        int ry = (int) settings.getResolution().y;
+        int rz = (int) settings.getResolution().z;
+
+        List<int[]> cells = collectBoundaryShellCells(rx, ry, rz);
+        float boundingRadius = (float) Math.sqrt((rx/2f)*(rx/2f) + (ry/2f)*(ry/2f) + (rz/2f)*(rz/2f));
+        float scale = TARGET_RENDER_RADIUS / boundingRadius;
+
+        FloatBuffer positions = BufferUtils.createFloatBuffer(cells.size() * 3);
+        for (int[] c : cells) {
+            positions.put((c[0] - rx/2f) * scale)
+                     .put((c[1] - ry/2f) * scale)
+                     .put((c[2] - rz/2f) * scale);
+        }
+        positions.flip();
+
+        Mesh mesh = new Mesh();
+        mesh.setMode(Mesh.Mode.Points);
+        mesh.setBuffer(VertexBuffer.Type.Position, 3, positions);
+        mesh.updateBound();
+        mesh.setStatic();
+        return mesh;
     }
 
-    public ArrayList<Color> calculateColours(ArrayList<Color> colours, int numOfColours) {
+    public ArrayList<ColorRGBA> calculateColours(ArrayList<ColorRGBA> colours, int numOfColours) {
         colours = new ArrayList<>();
         for (int c=0; c<numOfColours; c++) {
             double h = (2.0/3)*(1 - c*1.0/numOfColours);
@@ -194,7 +190,7 @@ public class LatticeBoltzmannCFDSolver {
             float r = awtColour.getRed()/255f;
             float g = awtColour.getGreen()/255f;
             float b = awtColour.getBlue()/255f;
-            colours.add(new Color(r, g, b, 1f));
+            colours.add(new ColorRGBA(r, g, b, 1f));
         }
         return colours;
     }
@@ -219,4 +215,3 @@ public class LatticeBoltzmannCFDSolver {
         return densities;
     }
 }
-

@@ -16,8 +16,6 @@
 
 package io.github.wind_tunnel.lwjgl3;
 
-import com.badlogic.gdx.Version;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3NativesLoader;
 import org.lwjgl.system.macosx.LibC;
 import org.lwjgl.system.macosx.ObjCRuntime;
 
@@ -86,10 +84,9 @@ public class StartupHelper {
                 String programData = System.getenv("ProgramData");
                 if(programData == null) programData = "C:\\Temp\\"; // if ProgramData isn't set, try some fallback.
                 String prevTmpDir = System.getProperty("java.io.tmpdir", programData);
-                String prevUser = System.getProperty("user.name", "libGDX_User");
-                System.setProperty("java.io.tmpdir", programData + "/libGDX-temp");
-                System.setProperty("user.name", ("User_" + prevUser.hashCode() + "_GDX" + Version.VERSION).replace('.', '_'));
-                Lwjgl3NativesLoader.load();
+                String prevUser = System.getProperty("user.name", "jME_User");
+                System.setProperty("java.io.tmpdir", programData + "/jME-temp");
+                System.setProperty("user.name", ("User_" + prevUser.hashCode()).replace('.', '_'));
                 System.setProperty("java.io.tmpdir", prevTmpDir);
                 System.setProperty("user.name", prevUser);
             }
