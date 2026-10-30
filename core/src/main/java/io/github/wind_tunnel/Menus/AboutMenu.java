@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import io.github.wind_tunnel.Menu;
+import io.github.wind_tunnel.MenuNavigator;
 import io.github.wind_tunnel.MenuUtil;
 
 public class AboutMenu implements Menu {
@@ -49,9 +50,7 @@ public class AboutMenu implements Menu {
     }
 
     @Override
-    public String checkIfButtonsClicked() {
-        if (util.isButtonClicked(backButton)) {return "back";}
-        if (util.isButtonClicked(aboutButton)) {return "aboutMenu";}
-        return "aboutMenu";
+    public void checkIfButtonsClicked(MenuNavigator navigator) {
+        if (util.isButtonClicked(backButton)) {navigator.back();}
     }
 }

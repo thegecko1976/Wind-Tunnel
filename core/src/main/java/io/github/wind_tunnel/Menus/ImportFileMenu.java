@@ -7,11 +7,10 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import io.github.wind_tunnel.ImportFile;
 import io.github.wind_tunnel.Menu;
+import io.github.wind_tunnel.MenuNavigator;
 import io.github.wind_tunnel.MenuUtil;
-import io.github.wind_tunnel.Settings;
 
 public class ImportFileMenu implements Menu {
-    private Settings settings;
     private MenuUtil util;
     private ImportFile fileImporter;
 
@@ -33,7 +32,6 @@ public class ImportFileMenu implements Menu {
 
     public ImportFileMenu() {
         this.util = new MenuUtil();
-        this.settings = Settings.getInstance();
         this.fileImporter = new ImportFile();
 
         this.backIcon = util.loadIcon("back");
@@ -104,10 +102,13 @@ public class ImportFileMenu implements Menu {
     }
 
     @Override
-    public String checkIfButtonsClicked() {
+    public void checkIfButtonsClicked(MenuNavigator navigator) {
         if (selectedFile != null && util.isButtonClicked(importButton)) {
             if (fileImporter.importFile(selectedFile)) {
-                return "importSuccess";
+                // go back past the settings menu to the menu that opened it
+                navigator.back();
+                navigator.back();
+                return;
             }
         }
         if (util.isButtonClicked(cancelButton)) {
@@ -124,10 +125,6 @@ public class ImportFileMenu implements Menu {
         if (util.isButtonClicked(pageArrows[0]) && pageNumber > 1) {pageNumber -= 1;}
         if (util.isButtonClicked(pageArrows[1]) && pageNumber < totalPages) {pageNumber += 1;}
 
-        if (util.isButtonClicked(backButton)) {
-            settings.setPlaceBarriers(false);
-            return "back";
-        }
-        return "importFileMenu";
+        if (util.isButtonClicked(backButton)) {navigator.back();}
     }
 }

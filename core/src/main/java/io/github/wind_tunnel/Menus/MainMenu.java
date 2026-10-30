@@ -5,13 +5,21 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
+import io.github.wind_tunnel.LatticeBoltzmannCFDSolver;
 import io.github.wind_tunnel.Menu;
+import io.github.wind_tunnel.MenuNavigator;
 import io.github.wind_tunnel.MenuUtil;
 import io.github.wind_tunnel.Settings;
 
 public class MainMenu implements Menu {
     private Settings settings;
     private MenuUtil util;
+    private LatticeBoltzmannCFDSolver cfdSolver;
+
+    private Menu levelsMenu;
+    private Menu freeplayMenu;
+    private Menu settingsMenu;
+    private Menu aboutMenu;
 
     private Rectangle quitButton;
     private Rectangle settingsButton;
@@ -23,9 +31,15 @@ public class MainMenu implements Menu {
     private Texture settingsIcon;
     private Texture aboutIcon;
 
-    public MainMenu() {
+    public MainMenu(Menu levelsMenu, Menu freeplayMenu, Menu settingsMenu, Menu aboutMenu) {
         this.settings = Settings.getInstance();
         this.util = new MenuUtil();
+        this.cfdSolver = LatticeBoltzmannCFDSolver.getInstance();
+
+        this.levelsMenu = levelsMenu;
+        this.freeplayMenu = freeplayMenu;
+        this.settingsMenu = settingsMenu;
+        this.aboutMenu = aboutMenu;
 
         this.quitIcon = util.loadIcon("quit");
         this.settingsIcon = util.loadIcon("settings");
@@ -53,18 +67,23 @@ public class MainMenu implements Menu {
     }
 
     @Override
-    public String checkIfButtonsClicked() {
-        if (util.isButtonClicked(quitButton)) {return "quit";}
-        if (util.isButtonClicked(settingsButton)) {return "settingsMenu";}
-        if (util.isButtonClicked(levelsButton)) {
-            settings.setPlaceBarriers(false);
-            return "levelsMenu";
-        }
-        if (util.isButtonClicked(freeplayButton)) {
-            settings.setPlaceBarriers(false);
-            return "freeplayMenu";
-        }
-        if (util.isButtonClicked(aboutButton)) {return "aboutMenu";}
-        return "mainMenu";
+    public void checkIfButtonsClicked(MenuNavigator navigator) {
+        if (util.isButtonClicked(quitButton)) {navigator.quit(); return;}
+        if (util.isButtonClicked(settingsButton)) {navigator.open(settingsMenu); return;}
+        if (util.isButtonClicked(levelsButton)) {navigator.open(levelsMenu); return;}
+        if (util.isButtonClicked(freeplayButton)) {navigator.open(freeplayMenu); return;}
+        if (util.isButtonClicked(aboutButton)) {navigator.open(aboutMenu);}
+    }
+
+    @Override
+    public void onEnter() {resetLevelState();}
+
+    @Override
+    public void onResume() {resetLevelState();}
+
+    private void resetLevelState() {
+        settings.setLoadedLevel(false);
+        settings.resetLockedSettings();
+        cfdSolver.removeAllBarriers();
     }
 }
