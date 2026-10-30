@@ -34,6 +34,7 @@ public class ImportFile {
                 }
             }
         } else if (getFileExtension(filePath).equals("obj")) {
+            if (getVerticesFromOBJModel(filePath) == null || getFacesFromOBJModel(filePath) == null) {return false;} // can't be read, so leave the simulation as it is
             cfdSolver.removeAllBarriers();
             settings.setResolution(new Vector3(settings.getResolutionValues()[2][0], settings.getResolutionValues()[2][1], settings.getResolutionValues()[2][1]));
             settings.setSolver(settings.getSolverValues()[1]);
@@ -49,7 +50,10 @@ public class ImportFile {
         if (!file.exists()) {return;}
 
         Pixmap image = new Pixmap(file);
-        if (image.getWidth() > settings.getResolution().x || image.getHeight() > settings.getResolution().y || settings.getResolution().z != 1) {return;} // too big
+        if (image.getWidth() > settings.getResolution().x || image.getHeight() > settings.getResolution().y || settings.getResolution().z != 1) { // too big
+            image.dispose();
+            return;
+        }
 
         for (int x=0; x<image.getWidth(); x++) {
             for (int y=0; y<image.getHeight(); y++) {
@@ -59,6 +63,7 @@ public class ImportFile {
                 }
             }
         }
+        image.dispose();
     }
 
     public void loadOBJModel(String filePath, boolean fixedBarrier) {
@@ -85,6 +90,8 @@ public class ImportFile {
 
         ArrayList<Vector3> vertices = getVerticesFromOBJModel(filePath);
         ArrayList<int[]> faces = getFacesFromOBJModel(filePath);
+
+        if (vertices == null || faces == null) {return;}
 
         // draw lines (using shapeDrawer.line()) from each vertex to its neighbour according to the faces from the loaded .obj
 
@@ -136,7 +143,12 @@ public class ImportFile {
 
             lineList = line.split("\\s+");
             if (line.startsWith("v ")) {
-                vertices.add(new Vector3(Float.parseFloat(lineList[1]), Float.parseFloat(lineList[2]), Float.parseFloat(lineList[3])));
+                if (lineList.length < 4) {return null;} // a vertex needs x, y and z
+                try {
+                    vertices.add(new Vector3(Float.parseFloat(lineList[1]), Float.parseFloat(lineList[2]), Float.parseFloat(lineList[3])));
+                } catch (NumberFormatException e) {
+                    return null; // not a valid .obj file
+                }
             }
         }
         if (vertices.isEmpty()) {return null;}
@@ -150,21 +162,41 @@ public class ImportFile {
 
         String[] contents = file.readString().split("\\r?\\n"); // split at every new line
         ArrayList<int[]> faces = new ArrayList<>();
+        int numberOfVertices = 0;
 
         String[] lineList;
         for (String line : contents) {
             if (line.isEmpty()) {continue;}
 
             lineList = line.split("\\s+");
-            if (line.startsWith("f ")) {
+            if (line.startsWith("v ")) {
+                numberOfVertices += 1; // counted so negative (relative) indices can be worked out
+            } else if (line.startsWith("f ")) {
                 int[] face = new int[lineList.length-1];
                 for (int count=1; count<lineList.length; count++) {
-                    face[count-1] = Integer.parseInt(lineList[count])-1;
+                    // each corner is written as v, v/vt, v/vt/vn or v//vn, and only v (the vertex index) is needed
+                    int index;
+                    try {
+                        index = Integer.parseInt(lineList[count].split("/")[0]);
+                    } catch (NumberFormatException e) {
+                        return null; // not a valid .obj file
+                    }
+                    if (index < 0) {
+                        face[count-1] = numberOfVertices+index; // negative indices count back from the latest vertex
+                    } else {
+                        face[count-1] = index-1; // positive indices start at 1
+                    }
                 }
                 faces.add(face);
             }
         }
         if (faces.isEmpty()) {return null;}
+
+        for (int[] face : faces) {
+            for (int index : face) {
+                if (index < 0 || index >= numberOfVertices) {return null;} // refers to a vertex that doesn't exist
+            }
+        }
 
         return faces;
     }
@@ -192,10 +224,6 @@ public class ImportFile {
 
     public String getFileExtension(String filePath) {
         return Gdx.files.internal(filePath).extension();
-    }
-
-    public int getNumberOfFiles(String folder) {
-        return Gdx.files.internal(folder).list().length;
     }
 
     public String getModelType(String filePath) {
@@ -235,7 +263,9 @@ public class ImportFile {
 
         if (file.extension().equals("bmp")) { // 2D file
             Pixmap image = new Pixmap(file);
-            return new Vector3(image.getWidth(), image.getHeight(), 0);
+            Vector3 resolution = new Vector3(image.getWidth(), image.getHeight(), 0);
+            image.dispose(); // a Pixmap's memory is only freed by dispose(), not by the garbage collector
+            return resolution;
         } else if (file.extension().equals("obj")) { // 3D file
             System.out.println("3D file");
         }

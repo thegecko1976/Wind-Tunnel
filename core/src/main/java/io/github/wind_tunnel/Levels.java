@@ -47,6 +47,12 @@ public class Levels {
         } else if (levelNumber == 11) {
             settings.setResolution(new Vector3(settings.getResolutionValues()[2][0], settings.getResolutionValues()[2][1], settings.getResolutionValues()[2][1])); // 128x72x72
         }
+        // the solver must be set before initialiseFluid(), which sizes the fluid for 2D (9 directions) or 3D (19)
+        if (levelNumber >= 1 && levelNumber <= 10) {
+            settings.setSolver("2D LBM");
+        } else if (levelNumber >= 11 && levelNumber <= 20) {
+            settings.setSolver("3D LBM");
+        }
         cfdSolver.initialiseFluid();
         settings.resetLockedSettings();
         settings.changeBrushSizeAndCameraDistance();
@@ -55,11 +61,6 @@ public class Levels {
         cfdSolver.removeAllBarriers();
         settings.setLoadedLevel(true);
 
-        if (levelNumber >= 1 && levelNumber <= 10) {
-            settings.setSolver("2D LBM");
-        } else if (levelNumber >= 11 && levelNumber <= 20) {
-            settings.setSolver("3D LBM");
-        }
         settings.setFlowSpeed(0.100f);
         settings.setViscosity(0.015f);
         settings.setLockedSettingAt(0, true);
