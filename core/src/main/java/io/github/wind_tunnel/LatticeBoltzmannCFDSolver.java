@@ -91,6 +91,7 @@ public class LatticeBoltzmannCFDSolver {
     private int black = Color.rgba8888(Color.BLACK);
 
     private float[] velocities; // the x, y and z velocity of cell i are at velocities[i*3], [i*3+1] and [i*3+2], used for the colours
+    private float[] cellDensities; // the total density of each cell, used for the density plot
 
     // the 2D picture: one pixel per cell, drawn stretched across the screen in a single draw
     private Pixmap fieldPixmap;
@@ -141,9 +142,16 @@ public class LatticeBoltzmannCFDSolver {
         this.densities = new float[cellCount*neighbours];
         this.nextDensities = new float[cellCount*neighbours];
         this.velocities = new float[cellCount*3];
+        this.cellDensities = new float[cellCount];
+        Arrays.fill(cellDensities, 1); // the fluid starts at rest density
         this.barriers = scaledBarriers;
         barrierCellsOutOfDate = true;
         settings.changeBrushSizeAndCameraDistance();
+
+        // in 3D, start on the middle plane: barriers can't go on the outside planes, so clicking on plane 0 would do nothing
+        if (gridZ > 1 && (settings.getSelectedZPlane() <= 0 || settings.getSelectedZPlane() >= gridZ-1)) {
+            settings.setSelectedZPlane(gridZ/2);
+        }
 
         v = settings.getFlowSpeed();
         one15vv = 1-1.5f*v*v;
@@ -208,6 +216,7 @@ public class LatticeBoltzmannCFDSolver {
         // the working values are local variables (not fields) so that each core has its own copy
         final float[] f = densities;
         final float[] velocity = velocities;
+        final float[] density = cellDensities;
         final boolean[] barrier = barriers;
         final int q = neighbours;
         final int slabSize = slabSize();
@@ -238,10 +247,11 @@ public class LatticeBoltzmannCFDSolver {
                 velocityX /= cellDensity;
                 velocityY /= cellDensity;
 
-                // store the velocities to draw colours later
+                // store the velocities and density to draw colours later
                 velocity[i*3] = velocityX;
                 velocity[i*3+1] = velocityY;
                 velocity[i*3+2] = velocityZ;
+                density[i] = cellDensity;
 
                 // relaxation equations based on the Maxwell-Boltzmann Distribution curve
                 if (q == 9) {
@@ -490,7 +500,7 @@ public class LatticeBoltzmannCFDSolver {
 
     private void fillField() {
         // the plot, contrast and level don't change during a frame, so they are worked out once rather than for every cell
-        final int component = colourComponent();
+        final int plotMode = plotMode();
         final float contrast = 1/(3*settings.getFlowSpeed());
         final boolean loadedLevel = settings.getLoadedLevel();
 
@@ -500,7 +510,7 @@ public class LatticeBoltzmannCFDSolver {
                 int i = y*gridX + x;
                 if (loadedLevel && settings.getFixedBarrierAt(x, y, 0)) {fieldPixels[row+x] = black;}
                 else if (barriers[i]) {fieldPixels[row+x] = white;}
-                else {fieldPixels[row+x] = packedColours[colourIndex(i, component, contrast)];}
+                else {fieldPixels[row+x] = packedColours[colourIndex(i, plotMode, contrast)];}
             }
         });
 
@@ -512,40 +522,52 @@ public class LatticeBoltzmannCFDSolver {
 
     private void renderPoints(ShapeRenderer sr) {
         renderer.prepareFrame(); // the rotation and projection are the same for every point, so they are worked out once per frame
-        int component = colourComponent();
+        int plotMode = plotMode();
         float contrast = 1/(3*settings.getFlowSpeed());
         boolean loadedLevel = settings.getLoadedLevel();
+        int plane = settings.getSelectedZPlane();
 
         sr.begin(ShapeRenderer.ShapeType.Filled);
         if (settings.getRenderOnlySelectedZPlane()) {
-            int z = settings.getSelectedZPlane();
-            if (z >= 0 && z < gridZ) {
+            if (plane >= 0 && plane < gridZ) {
                 for (int x=0; x<gridX; x++) {
                     for (int y=0; y<gridY; y++) {
-                        drawPoint(sr, x, y, z, component, contrast, loadedLevel);
+                        drawPoint(sr, x, y, plane, plotMode, contrast, loadedLevel);
                     }
                 }
             }
         } else {
-            // only the outside of the box and the barriers are drawn, so those cells are visited directly instead of searching the whole grid
+            // the outside of the box, the selected plane and the barriers are drawn, so those cells are visited directly instead of searching the whole grid
             for (int z=0; z<gridZ; z++) {
                 for (int y=0; y<gridY; y++) {
-                    drawPoint(sr, 0, y, z, component, contrast, loadedLevel); // left face
-                    drawPoint(sr, gridX-1, y, z, component, contrast, loadedLevel); // right face
+                    drawPoint(sr, 0, y, z, plotMode, contrast, loadedLevel); // left face
+                    drawPoint(sr, gridX-1, y, z, plotMode, contrast, loadedLevel); // right face
                 }
             }
             for (int z=0; z<gridZ; z++) {
                 for (int x=1; x<gridX-1; x++) {
-                    drawPoint(sr, x, 0, z, component, contrast, loadedLevel); // bottom face
-                    drawPoint(sr, x, gridY-1, z, component, contrast, loadedLevel); // top face
+                    drawPoint(sr, x, 0, z, plotMode, contrast, loadedLevel); // bottom face
+                    drawPoint(sr, x, gridY-1, z, plotMode, contrast, loadedLevel); // top face
                 }
             }
             for (int y=1; y<gridY-1; y++) {
                 for (int x=1; x<gridX-1; x++) {
-                    drawPoint(sr, x, y, 0, component, contrast, loadedLevel); // front face
-                    drawPoint(sr, x, y, gridZ-1, component, contrast, loadedLevel); // back face
+                    drawPoint(sr, x, y, 0, plotMode, contrast, loadedLevel); // front face
+                    drawPoint(sr, x, y, gridZ-1, plotMode, contrast, loadedLevel); // back face
                 }
             }
+
+            // the boundary conditions reset the faces to the incoming flow every step, so they always show the same colour;
+            // the selected plane is drawn on top to show the flow inside the tunnel, and where clicks will add barriers
+            if (plane > 0 && plane < gridZ-1) {
+                for (int y=1; y<gridY-1; y++) {
+                    for (int x=1; x<gridX-1; x++) {
+                        if (barriers[(plane*gridY + y)*gridX + x]) {continue;} // drawn with the other barriers below
+                        drawPoint(sr, x, y, plane, plotMode, contrast, loadedLevel);
+                    }
+                }
+            }
+
             updateBarrierCells();
             for (int k=0; k<barrierCount; k++) {
                 int i = barrierCells[k];
@@ -553,17 +575,17 @@ public class LatticeBoltzmannCFDSolver {
                 int y = (i/gridX)%gridY;
                 int z = i/(gridX*gridY);
                 if (x == 0 || y == 0 || z == 0 || x == gridX-1 || y == gridY-1 || z == gridZ-1) {continue;} // already drawn as part of a face
-                drawPoint(sr, x, y, z, component, contrast, loadedLevel);
+                drawPoint(sr, x, y, z, plotMode, contrast, loadedLevel);
             }
         }
         sr.end();
     }
 
-    private void drawPoint(ShapeRenderer sr, int x, int y, int z, int component, float contrast, boolean loadedLevel) {
+    private void drawPoint(ShapeRenderer sr, int x, int y, int z, int plotMode, float contrast, boolean loadedLevel) {
         int i = (z*gridY + y)*gridX + x;
-        if (loadedLevel && settings.getFixedBarrierAt(x, y, z)) {sr.setColor(Color.BLACK);}
+        if (loadedLevel && settings.getFixedBarrierAt(x, y, z)) {sr.setColor(Color.GRAY);} // grey rather than the 2D black, which wouldn't show on the black background
         else if (barriers[i]) {sr.setColor(Color.WHITE);}
-        else {sr.setColor(colours.get(colourIndex(i, component, contrast)));} // calculates colour based on plotMode
+        else {sr.setColor(colours.get(colourIndex(i, plotMode, contrast)));} // calculates colour based on plotMode
 
         rotatedPoint = renderer.rotate(x-(gridX/2f), y-(gridY/2f), z-(gridZ/2f));
         screenPos = renderer.pointProjection(rotatedPoint);
@@ -575,7 +597,7 @@ public class LatticeBoltzmannCFDSolver {
         keybinds = Keybinds.getInstance();
 
         mouse.x = Gdx.input.getX();
-        mouse.y = 1080-Gdx.input.getY();
+        mouse.y = Gdx.graphics.getHeight()-Gdx.input.getY(); // the mouse is measured from the top of the window, the drawing from the bottom
         if (!settings.getPlaceBarriers()) {
             if (!Gdx.input.isButtonPressed(keybinds.getBindAt(9)) && !Gdx.input.isButtonPressed(keybinds.getBindAt(10))) {
                 settings.setPlaceBarriers(true);
@@ -738,21 +760,44 @@ public class LatticeBoltzmannCFDSolver {
         return Math.round(amount*255)/255f;
     }
 
-    // which velocity the colours show: 0 for x, 1 for y, or -1 for a plot that isn't drawn yet (speed, density and curl), which uses the first colour
-    private int colourComponent() {
+    // what the colours show: 0 x velocity, 1 y velocity, 2 speed, 3 density, 4 curl
+    private int plotMode() {
         if (settings.getPlot().equals("x velocity")) {return 0;}
         if (settings.getPlot().equals("y velocity")) {return 1;}
-        return -1;
+        if (settings.getPlot().equals("speed")) {return 2;}
+        if (settings.getPlot().equals("density")) {return 3;}
+        return 4; // curl
     }
 
-    private int colourIndex(int i, int component, float contrast) {
-        double index = 0;
-        if (component >= 0) {
-            index = numOfColors*(0.5+(velocities[i*3 + component]*contrast));
+    // where on the colour scale (0 blue to numOfColors-1 red) cell i goes; contrast = 1/(3*flow speed), so the incoming flow lands at the same colour at any flow speed
+    private int colourIndex(int i, int plotMode, float contrast) {
+        double index;
+        if (plotMode == 0 || plotMode == 1) { // x or y velocity: no movement is the middle of the scale
+            index = numOfColors*(0.5+(velocities[i*3 + plotMode]*contrast));
+        } else if (plotMode == 2) { // speed: still fluid is blue, and the incoming flow is the middle of the scale
+            float speed = (float) Math.sqrt(velocities[i*3]*velocities[i*3] + velocities[i*3+1]*velocities[i*3+1] + velocities[i*3+2]*velocities[i*3+2]);
+            index = numOfColors*(1.5*speed*contrast);
+        } else if (plotMode == 3) { // density: the rest density 1 is the middle; density changes grow with the square of the flow speed, so contrast is squared
+            index = numOfColors*(0.5+(cellDensities[i]-1)*0.6*contrast*contrast);
+        } else { // curl: no spin is the middle, anticlockwise spin (seen from the front) is red and clockwise is blue
+            index = numOfColors*(0.5+curl(i)*1.5*contrast);
         }
         if (index < 0) {index = 0;}
         if (index >= numOfColors) {index = numOfColors-1;}
         return (int) index;
+    }
+
+    // how fast the fluid is spinning around the z axis at cell i, from the velocities of its four neighbours in x and y
+    // (barriers count as still, and cells on the edge of the grid count as not spinning)
+    private float curl(int i) {
+        int x = i%gridX;
+        int y = (i/gridX)%gridY;
+        if (x == 0 || y == 0 || x == gridX-1 || y == gridY-1) {return 0;}
+        return velocityAt(i+1, 1) - velocityAt(i-1, 1) - velocityAt(i+gridX, 0) + velocityAt(i-gridX, 0);
+    }
+
+    private float velocityAt(int i, int component) {
+        return barriers[i] ? 0 : velocities[i*3 + component];
     }
 
     public void addBarrier(int x, int y, int z, boolean fixed) {
@@ -803,6 +848,59 @@ public class LatticeBoltzmannCFDSolver {
         for (int k=0; k<count; k++) {
             int i = cells[k];
             removeBarrier(i%gridX, (i/gridX)%gridY, i/(gridX*gridY));
+        }
+    }
+
+    // turns every fluid cell that can't be reached from the edge of the grid into a barrier, so a closed surface
+    // (such as an imported 3D model) becomes a solid object rather than a hollow shell with fluid trapped inside
+    public void fillEnclosedSpaces(boolean fixed) {
+        boolean[] reached = new boolean[cellCount];
+        int[] queue = new int[cellCount];
+        int head = 0;
+        int tail = 0;
+
+        // start from every fluid cell on the edge of the grid
+        for (int i=0; i<cellCount; i++) {
+            int x = i%gridX;
+            int y = (i/gridX)%gridY;
+            int z = i/(gridX*gridY);
+            boolean edge = x == 0 || y == 0 || x == gridX-1 || y == gridY-1 || (gridZ > 1 && (z == 0 || z == gridZ-1));
+            if (edge && !barriers[i]) {
+                reached[i] = true;
+                queue[tail] = i;
+                tail += 1;
+            }
+        }
+
+        // flood outwards through fluid cells that share a face (a breadth-first search)
+        int plane = gridX*gridY;
+        int[] adjacent = new int[6];
+        while (head < tail) {
+            int i = queue[head];
+            head += 1;
+            int x = i%gridX;
+            int y = (i/gridX)%gridY;
+            int z = i/plane;
+            adjacent[0] = x > 0 ? i-1 : -1;
+            adjacent[1] = x < gridX-1 ? i+1 : -1;
+            adjacent[2] = y > 0 ? i-gridX : -1;
+            adjacent[3] = y < gridY-1 ? i+gridX : -1;
+            adjacent[4] = z > 0 ? i-plane : -1;
+            adjacent[5] = z < gridZ-1 ? i+plane : -1;
+            for (int j : adjacent) {
+                if (j >= 0 && !barriers[j] && !reached[j]) {
+                    reached[j] = true;
+                    queue[tail] = j;
+                    tail += 1;
+                }
+            }
+        }
+
+        // anything the flood couldn't reach is sealed off, so it becomes part of the solid
+        for (int i=0; i<cellCount; i++) {
+            if (!barriers[i] && !reached[i]) {
+                addBarrier(i%gridX, (i/gridX)%gridY, i/plane, fixed);
+            }
         }
     }
 

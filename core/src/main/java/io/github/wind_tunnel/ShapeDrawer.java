@@ -111,6 +111,25 @@ public class ShapeDrawer {
         }
     }
 
+    public void triangle(Vector3 a, Vector3 b, Vector3 c, boolean fixedBarrier) {
+        // fill the whole surface of a 3D triangle with barriers by stepping across it in small steps,
+        // using p = a + s*(b-a) + t*(c-a) for every s, t >= 0 with s + t <= 1
+        float longestSide = Math.max(a.dst(b), Math.max(b.dst(c), c.dst(a)));
+        int steps = Math.max(1, (int) Math.ceil(longestSide*4)); // a quarter of a cell apart, so no cell the triangle passes through is missed
+
+        for (int i=0; i<=steps; i++) {
+            for (int j=0; j<=steps-i; j++) {
+                float s = (float) i/steps;
+                float t = (float) j/steps;
+                float x = a.x + s*(b.x-a.x) + t*(c.x-a.x);
+                float y = a.y + s*(b.y-a.y) + t*(c.y-a.y);
+                float z = a.z + s*(b.z-a.z) + t*(c.z-a.z);
+                // + 0.5 rounds to the nearest cell, the same as line() does
+                cfdSolver.addBarrier((int) Math.floor(x+0.5f), (int) Math.floor(y+0.5f), (int) Math.floor(z+0.5f), fixedBarrier);
+            }
+        }
+    }
+
     public void circle(int x, int y, int z, int radius, boolean fill, boolean fixedBarrier) {
         for (int dx=-radius; dx<=radius; dx++) {
             for (int dy=-radius; dy<=radius; dy++) {

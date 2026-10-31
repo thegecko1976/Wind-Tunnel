@@ -93,7 +93,7 @@ public class ImportFile {
 
         if (vertices == null || faces == null) {return;}
 
-        // draw lines (using shapeDrawer.line()) from each vertex to its neighbour according to the faces from the loaded .obj
+        // fill every face of the model with barriers, then fill its inside, so the fluid flows around the model rather than through it
 
         // bounding box of the model, where min is the front-bottom-left corner and max is the back-top-right corner
         Vector3 min = new Vector3(vertices.get(0));
@@ -122,12 +122,12 @@ public class ImportFile {
         }
 
         for (int[] face : faces) {
-            for (int count=0; count<face.length; count++) {
-                Vector3 vertex1 = vertices.get(face[count]);
-                Vector3 vertex2 = vertices.get(face[(count+1)%face.length]);
-                shapeDrawer.line(vertex1, vertex2, fixedBarrier);
+            // a face with more than three corners is split into triangles that all share its first corner
+            for (int count=1; count<face.length-1; count++) {
+                shapeDrawer.triangle(vertices.get(face[0]), vertices.get(face[count]), vertices.get(face[count+1]), fixedBarrier);
             }
         }
+        cfdSolver.fillEnclosedSpaces(fixedBarrier);
     }
 
     public ArrayList<Vector3> getVerticesFromOBJModel(String filePath) {

@@ -143,7 +143,7 @@ public class Levels {
         } else if (levelNumber == 10) {
             fileImporter.loadBitmap(levelsFolder + "trollface.bmp", true);
         } else if (levelNumber == 11) {
-            fileImporter.loadOBJModel("assets/models/icosphere.obj", false);
+            fileImporter.loadOBJModel("assets/models/icosphere.obj", true); // fixed, like the shapes in the 2D levels, so the player can't erase it
         }
         settings.setLoadedLevel(true);
     }

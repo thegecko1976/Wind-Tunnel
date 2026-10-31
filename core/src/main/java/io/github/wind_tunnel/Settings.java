@@ -17,6 +17,8 @@ public class Settings {
 
     private String[] plotValues = {"speed", "x velocity", "y velocity", "density", "curl"};
     private int[][] resolutionValues = {{32, 18}, {64, 36}, {128, 72}, {256, 144}, {512, 288}, {1024, 576}}; // keep the 16:9 aspect ratio
+    // 3D only goes up to 256x144x144 (about 0.9 GB); 512x288x288 would need about 7 GB and 1024x576x576 is too big for a Java array
+    private int largest3DResolution = 3;
     private String[] solverValues = {"2D LBM", "3D LBM"};
 
     private boolean simulationRunning = false;
@@ -81,6 +83,10 @@ public class Settings {
     public String cycleOptions(int change, String currentValue, String[] possibleValues) {
         if (currentValue.equals("2D LBM")) {
             resolution.z = resolution.y;
+            if (resolution.x > resolutionValues[largest3DResolution][0]) { // too big for 3D, so use the largest 3D size
+                int[] largest = resolutionValues[largest3DResolution];
+                resolution = new Vector3(largest[0], largest[1], largest[1]);
+            }
         } else if (currentValue.equals("3D LBM")) {
             resolution.z = 1;
         }
@@ -108,6 +114,7 @@ public class Settings {
     }
 
     public void cycleResolutionOptions(int change) {
+        int options = solver.equals("3D LBM") ? largest3DResolution+1 : resolutionValues.length; // 3D stops at 256x144x144
         int index = 0;
         for (int count=0; count<resolutionValues.length; count++) {
             if (resolutionValues[count][0] == this.resolution.x && resolutionValues[count][1] == this.resolution.y) {
@@ -116,14 +123,16 @@ public class Settings {
             }
         }
         if (change == 1) {
-            if (index == resolutionValues.length-1) {
+            if (index >= options-1) {
                 this.resolution = new Vector3(resolutionValues[0][0], resolutionValues[0][1], resolutionValues[0][1]);
             } else {
                 this.resolution = new Vector3(resolutionValues[index+1][0], resolutionValues[index+1][1], resolutionValues[index+1][1]);
             }
         } else if (change == -1) {
             if (index == 0) {
-                this.resolution = new Vector3(resolutionValues[resolutionValues.length-1][0], resolutionValues[resolutionValues.length-1][1], resolutionValues[resolutionValues.length-1][1]);
+                this.resolution = new Vector3(resolutionValues[options-1][0], resolutionValues[options-1][1], resolutionValues[options-1][1]);
+            } else if (index > options-1) { // a 3D size above the 3D limit (only if set from elsewhere), so drop to the largest allowed
+                this.resolution = new Vector3(resolutionValues[options-1][0], resolutionValues[options-1][1], resolutionValues[options-1][1]);
             } else {
                 this.resolution = new Vector3(resolutionValues[index-1][0], resolutionValues[index-1][1], resolutionValues[index-1][1]);
             }
