@@ -17,8 +17,9 @@ public class Settings {
 
     private String[] plotValues = {"speed", "x velocity", "y velocity", "density", "curl"};
     private int[][] resolutionValues = {{32, 18}, {64, 36}, {128, 72}, {256, 144}, {512, 288}, {1024, 576}}; // keep the 16:9 aspect ratio
-    // 3D only goes up to 256x144x144 (about 0.9 GB); 512x288x288 would need about 7 GB and 1024x576x576 is too big for a Java array
-    private int largest3DResolution = 3;
+    // 3D only goes up to 128x72x72, which runs smoothly (about 16 ms a frame); 256x144x144 works but only runs at about
+    // 11 frames a second, 512x288x288 would need about 7 GB, and 1024x576x576 is too big for a Java array
+    private int largest3DResolution = 2;
     private String[] solverValues = {"2D LBM", "3D LBM"};
 
     private boolean simulationRunning = false;
@@ -114,7 +115,7 @@ public class Settings {
     }
 
     public void cycleResolutionOptions(int change) {
-        int options = solver.equals("3D LBM") ? largest3DResolution+1 : resolutionValues.length; // 3D stops at 256x144x144
+        int options = solver.equals("3D LBM") ? largest3DResolution+1 : resolutionValues.length; // 3D stops at largest3DResolution
         int index = 0;
         for (int count=0; count<resolutionValues.length; count++) {
             if (resolutionValues[count][0] == this.resolution.x && resolutionValues[count][1] == this.resolution.y) {
