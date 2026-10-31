@@ -27,6 +27,12 @@ public class ThreeDimensionalRenderer {
     private float fovCalculation;
     private float zNormalisation = zFar/(zFar-zNear);
 
+    // built once per frame by prepareFrame(), then used by rotate() and pointProjection() for every point
+    private float[][] rotationX;
+    private float[][] rotationY;
+    private float[][] rotationZ;
+    private float[][] projectionMatrix;
+
     public ThreeDimensionalRenderer() {
         this.settings = Settings.getInstance();
 
@@ -35,7 +41,9 @@ public class ThreeDimensionalRenderer {
         this.aspectRatio = screenDimensions.x/screenDimensions.y;
     }
 
-    public Vector3 rotate(float x, float y, float z) {
+    // the angles, field of view and origin are the same for every point in a frame, so the matrices are built here once per frame
+    // instead of in rotate() and pointProjection() for every point; call this before drawing the points
+    public void prepareFrame() {
         rotationAngles.x = settings.getRotationAnglesX();
         rotationAngles.y = settings.getRotationAnglesY();
         rotationAngles.z = settings.getRotationAnglesZ();
@@ -48,26 +56,37 @@ public class ThreeDimensionalRenderer {
         float cosZ = (float) Math.cos(rotationAngles.z);
 
         // 3x3 rotation matrices in x y z
-        float[][] rotationX = {
+        rotationX = new float[][]{
             {1, 0, 0},
             {0, cosX, -sinX},
             {0, sinX, cosX},
         };
 
-        float[][] rotationY = {
+        rotationY = new float[][]{
             {cosY, 0, sinY},
             {0, 1, 0},
             {-sinY, 0, cosY},
         };
 
-        float[][] rotationZ = {
+        rotationZ = new float[][]{
             {cosZ, -sinZ, 0},
             {sinZ, cosZ, 0},
             {0, 0, 1},
         };
 
-        // this calculates the dot product of all the rotation vectors above with a point
         origin = settings.getOrigin();
+
+        fovCalculation = (float) (1/Math.tan(0.5*(settings.getFov()*(Math.PI/180))));
+        projectionMatrix = new float[][]{
+            {fovCalculation/aspectRatio, 0, 0, 0},
+            {0, fovCalculation, 0, 0},
+            {0, 0, zNormalisation, -zNear*zNormalisation},
+            {0, 0, 1, 0}
+        };
+    }
+
+    public Vector3 rotate(float x, float y, float z) {
+        // this calculates the dot product of all the rotation vectors above with a point
         translated.x = x-origin.x;
         translated.y = y-origin.y;
         translated.z = z-origin.z;
@@ -94,25 +113,24 @@ public class ThreeDimensionalRenderer {
     }
 
     public Vector2 pointProjection(Vector3 point) {
-        fovCalculation = (float) (1/Math.tan(0.5*(settings.getFov()*(Math.PI/180))));
-
         // removes points that are too close to the camera to prevent the wrapping/clipping of points
         point.z += settings.getCameraDistance();
         if (point.z <= zNear) {return null;}
 
-        float[][] projectionMatrix = new float[][]{
-            {fovCalculation/aspectRatio, 0, 0, 0},
-            {0, fovCalculation, 0, 0},
-            {0, 0, zNormalisation, -zNear*zNormalisation},
-            {0, 0, 1, 0}
-        };
+        // multiply the point by the projection matrix, with w = 1 as this is a position not a direction;
+        // done here rather than with multiplyVectorWithMatrix() so no new vectors are made for every point
+        float w = 1;
+        float projectedX = projectionMatrix[0][0]*point.x + projectionMatrix[0][1]*point.y + projectionMatrix[0][2]*point.z + projectionMatrix[0][3]*w;
+        float projectedY = projectionMatrix[1][0]*point.x + projectionMatrix[1][1]*point.y + projectionMatrix[1][2]*point.z + projectionMatrix[1][3]*w;
+        w = projectionMatrix[3][0]*point.x + projectionMatrix[3][1]*point.y + projectionMatrix[3][2]*point.z + projectionMatrix[3][3]*w;
 
-        // w = 1 as this is a position not a direction
-        point = multiplyVectorWithMatrix(new Vector4(point.x, point.y, point.z, 1), projectionMatrix);
+        // perspective divide
+        projectedX /= w;
+        projectedY /= w;
 
         // convert 3D point to the 2D screen
-        projectedPoint.x = (point.x+1)*(screenDimensions.x/2);
-        projectedPoint.y = (point.y+1)*(screenDimensions.y/2);
+        projectedPoint.x = (projectedX+1)*(screenDimensions.x/2);
+        projectedPoint.y = (projectedY+1)*(screenDimensions.y/2);
 
         return projectedPoint;
     }

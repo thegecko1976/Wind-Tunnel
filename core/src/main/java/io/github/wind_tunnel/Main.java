@@ -16,6 +16,7 @@ public class Main extends ApplicationAdapter {
 
     private Keybinds keybinds;
     private MenuNavigator navigator;
+    private int shownFps = -1;
 
     @Override
     public void create() {
@@ -36,7 +37,11 @@ public class Main extends ApplicationAdapter {
     @Override
     public void render() {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
-        Gdx.graphics.setTitle("Wind Tunnel FPS: " + Gdx.graphics.getFramesPerSecond() + "/" + Gdx.graphics.getDisplayMode().refreshRate);
+        // the FPS only changes once a second and setting the title goes through the operating system, so only update it when it changes
+        if (Gdx.graphics.getFramesPerSecond() != shownFps) {
+            shownFps = Gdx.graphics.getFramesPerSecond();
+            Gdx.graphics.setTitle("Wind Tunnel FPS: " + shownFps + "/" + Gdx.graphics.getDisplayMode().refreshRate);
+        }
 
         keybinds.checkForKeyPresses();
 
@@ -48,5 +53,6 @@ public class Main extends ApplicationAdapter {
     public void dispose() {
         sr.dispose();
         batch.dispose();
+        LatticeBoltzmannCFDSolver.getInstance().dispose(); // frees the 2D picture's texture
     }
 }
