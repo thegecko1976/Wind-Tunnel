@@ -20,7 +20,7 @@ public class MenuUtil {
 
     public MenuUtil() {
         this.settings = Settings.getInstance();
-        this.screenDimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        this.screenDimensions = new Vector2(GameView.WIDTH, GameView.HEIGHT); // the menus are laid out in 1920x1080 game coordinates, whatever the window size
         this.font = new BitmapFont(Gdx.files.internal("assets/fonts/inter-semi-bold.fnt"));
         this.layout = new GlyphLayout();
     }
@@ -74,7 +74,9 @@ public class MenuUtil {
     }
 
     public boolean isButtonClicked(Rectangle button) {
-        return (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && button.contains(Gdx.input.getX(), screenDimensions.y-Gdx.input.getY()));
+        if (!Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {return false;}
+        Vector2 mouse = GameView.getInstance().getMouse(); // in game coordinates, the same as the buttons
+        return button.contains(mouse.x, mouse.y);
     }
 
     public Texture loadIcon(String name) {

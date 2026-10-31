@@ -1,6 +1,5 @@
 package io.github.wind_tunnel;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.Vector4;
@@ -37,7 +36,7 @@ public class ThreeDimensionalRenderer {
         this.settings = Settings.getInstance();
 
         this.rotationAngles = settings.getRotationAngles();
-        this.screenDimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        this.screenDimensions = new Vector2(GameView.WIDTH, GameView.HEIGHT); // points are projected into game coordinates, which GameView scales to the window
         this.aspectRatio = screenDimensions.x/screenDimensions.y;
     }
 

@@ -4,15 +4,12 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.wind_tunnel.Menus.*;
 
 public class Main extends ApplicationAdapter {
     private ShapeRenderer sr;
     private SpriteBatch batch;
-
-    private Vector2 screenDimensions;
 
     private Keybinds keybinds;
     private MenuNavigator navigator;
@@ -21,7 +18,6 @@ public class Main extends ApplicationAdapter {
     @Override
     public void create() {
         Gdx.input.setInputProcessor(new InputHandler());
-        screenDimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         sr = new ShapeRenderer();
         batch = new SpriteBatch();
@@ -43,10 +39,17 @@ public class Main extends ApplicationAdapter {
             Gdx.graphics.setTitle("Wind Tunnel FPS: " + shownFps + "/" + Gdx.graphics.getDisplayMode().refreshRate);
         }
 
+        GameView.getInstance().apply(sr, batch); // draw in 1920x1080 game coordinates, scaled to fit the window
+
         keybinds.checkForKeyPresses();
 
         navigator.getCurrentMenu().checkIfButtonsClicked(navigator);
         navigator.getCurrentMenu().render(sr, batch);
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        GameView.getInstance().resize(width, height);
     }
 
     @Override

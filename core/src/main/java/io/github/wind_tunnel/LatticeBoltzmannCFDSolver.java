@@ -462,7 +462,7 @@ public class LatticeBoltzmannCFDSolver {
     public void render(ShapeRenderer sr, SpriteBatch batch) {
         // call this outside sr.begin()/batch.begin(), as it starts and ends its own drawing
         if (settings.getSolver().equals("2D LBM")) {
-            cellDimensions = 1920/settings.getResolution().x;
+            cellDimensions = GameView.WIDTH/settings.getResolution().x;
         }
 
         drawBarriers();
@@ -596,8 +596,7 @@ public class LatticeBoltzmannCFDSolver {
     public void drawBarriers() {
         keybinds = Keybinds.getInstance();
 
-        mouse.x = Gdx.input.getX();
-        mouse.y = Gdx.graphics.getHeight()-Gdx.input.getY(); // the mouse is measured from the top of the window, the drawing from the bottom
+        mouse.set(GameView.getInstance().getMouse()); // in 1920x1080 game coordinates, the same as the drawing
         if (!settings.getPlaceBarriers()) {
             if (!Gdx.input.isButtonPressed(keybinds.getBindAt(9)) && !Gdx.input.isButtonPressed(keybinds.getBindAt(10))) {
                 settings.setPlaceBarriers(true);
@@ -605,8 +604,8 @@ public class LatticeBoltzmannCFDSolver {
         }
         cellPosition = new Vector3();
         if (settings.getSolver().equals("2D LBM")) {
-            cellPosition.x = Math.round(((mouse.x-(cellDimensions/2))/1920)*settings.getResolution().x);
-            cellPosition.y = Math.round(((mouse.y-(cellDimensions/2))/1080)*settings.getResolution().y);
+            cellPosition.x = Math.round(((mouse.x-(cellDimensions/2))/GameView.WIDTH)*settings.getResolution().x);
+            cellPosition.y = Math.round(((mouse.y-(cellDimensions/2))/GameView.HEIGHT)*settings.getResolution().y);
             cellPosition.z = 0;
             settings.setIntersectionPoint(cellPosition);
 
