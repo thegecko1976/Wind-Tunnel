@@ -25,7 +25,7 @@ public class Settings {
     private boolean placeBarriers = false;
 
     private Vector3 rotationAngles;
-    private int cameraDistance;
+    private float cameraDistance; // a float so zooming can move by part of a unit each frame
     private int fov;
     private Vector3 origin;
 
@@ -212,8 +212,8 @@ public class Settings {
     public int getBrushSize() {return this.brushSize;}
     public void setBrushSize(int brushSize) {this.brushSize = brushSize;}
 
-    public int getCameraDistance() {return this.cameraDistance;}
-    public void setCameraDistance(int cameraDistance) {if (cameraDistance > 0) {this.cameraDistance = cameraDistance;}}
+    public float getCameraDistance() {return this.cameraDistance;}
+    public void setCameraDistance(float cameraDistance) {if (cameraDistance >= 1) {this.cameraDistance = cameraDistance;}} // no closer than 1, as before
 
     public int getFov() {return this.fov;}
     public void setFov(int fov) {this.fov = fov;}

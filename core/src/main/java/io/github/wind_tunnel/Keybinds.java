@@ -32,23 +32,29 @@ public class Keybinds {
 
     public void checkForKeyPresses() {
         if (settings.getSolver().equals("3D LBM")) {
+            // how long the last frame took, so the view turns and zooms at the same speed at any frame rate
+            // (capped at a tenth of a second, so one slow frame can't make the view jump)
+            float seconds = Math.min(Gdx.graphics.getDeltaTime(), 0.1f);
+            float turn = (float) (Math.PI/180)*60*seconds; // 60 degrees a second, the same as the old 1 degree a frame at 60 frames per second
+            float zoom = 60*seconds; // 60 units a second, the same as the old 1 unit a frame at 60 frames per second
+
             if (Gdx.input.isKeyPressed(binds[0])) {
-                settings.setRotationAnglesX((float) (settings.getRotationAnglesX()-(Math.PI/180)));
+                settings.setRotationAnglesX(settings.getRotationAnglesX()-turn);
             }
             if (Gdx.input.isKeyPressed(binds[1])) {
-                settings.setRotationAnglesX((float) (settings.getRotationAnglesX()+(Math.PI/180)));
+                settings.setRotationAnglesX(settings.getRotationAnglesX()+turn);
             }
             if (Gdx.input.isKeyPressed(binds[2])) {
-                settings.setRotationAnglesY((float) (settings.getRotationAnglesY()+(Math.PI/180)));
+                settings.setRotationAnglesY(settings.getRotationAnglesY()+turn);
             }
             if (Gdx.input.isKeyPressed(binds[3])) {
-                settings.setRotationAnglesY((float) (settings.getRotationAnglesY()-(Math.PI/180)));
+                settings.setRotationAnglesY(settings.getRotationAnglesY()-turn);
             }
             if (Gdx.input.isKeyPressed(binds[4])) {
-                settings.setCameraDistance(settings.getCameraDistance()-1);
+                settings.setCameraDistance(settings.getCameraDistance()-zoom);
             }
             if (Gdx.input.isKeyPressed(binds[5])) {
-                settings.setCameraDistance(settings.getCameraDistance()+1);
+                settings.setCameraDistance(settings.getCameraDistance()+zoom);
             }
         }
         if (Gdx.input.isKeyJustPressed(binds[6])) {
