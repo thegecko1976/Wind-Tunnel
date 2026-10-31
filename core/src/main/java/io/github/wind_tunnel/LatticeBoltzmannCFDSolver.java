@@ -66,6 +66,16 @@ public class LatticeBoltzmannCFDSolver {
 
     private Vector3 rotatedPoint = new Vector3();
     private Vector2 screenPos;
+
+    // the 3D points of the current frame, collected so they can be drawn farthest first
+    private float[] pointX = new float[0];
+    private float[] pointY = new float[0];
+    private float[] pointDepth = new float[0]; // distance in front of the camera
+    private int[] pointColour = new int[0]; // a place on the colour scale, or one of the two barrier colours below
+    private long[] depthOrder = new long[0];
+    private int pointCount = 0;
+    private static final int BARRIER_COLOUR = -1;
+    private static final int FIXED_BARRIER_COLOUR = -2;
     private Vector2 mouse = new Vector2();
     private Vector3 cellPosition;
 
@@ -527,12 +537,12 @@ public class LatticeBoltzmannCFDSolver {
         boolean loadedLevel = settings.getLoadedLevel();
         int plane = settings.getSelectedZPlane();
 
-        sr.begin(ShapeRenderer.ShapeType.Filled);
+        pointCount = 0;
         if (settings.getRenderOnlySelectedZPlane()) {
             if (plane >= 0 && plane < gridZ) {
                 for (int x=0; x<gridX; x++) {
                     for (int y=0; y<gridY; y++) {
-                        drawPoint(sr, x, y, plane, plotMode, contrast, loadedLevel);
+                        addPoint(x, y, plane, plotMode, contrast, loadedLevel);
                     }
                 }
             }
@@ -540,30 +550,30 @@ public class LatticeBoltzmannCFDSolver {
             // the outside of the box, the selected plane and the barriers are drawn, so those cells are visited directly instead of searching the whole grid
             for (int z=0; z<gridZ; z++) {
                 for (int y=0; y<gridY; y++) {
-                    drawPoint(sr, 0, y, z, plotMode, contrast, loadedLevel); // left face
-                    drawPoint(sr, gridX-1, y, z, plotMode, contrast, loadedLevel); // right face
+                    addPoint(0, y, z, plotMode, contrast, loadedLevel); // left face
+                    addPoint(gridX-1, y, z, plotMode, contrast, loadedLevel); // right face
                 }
             }
             for (int z=0; z<gridZ; z++) {
                 for (int x=1; x<gridX-1; x++) {
-                    drawPoint(sr, x, 0, z, plotMode, contrast, loadedLevel); // bottom face
-                    drawPoint(sr, x, gridY-1, z, plotMode, contrast, loadedLevel); // top face
+                    addPoint(x, 0, z, plotMode, contrast, loadedLevel); // bottom face
+                    addPoint(x, gridY-1, z, plotMode, contrast, loadedLevel); // top face
                 }
             }
             for (int y=1; y<gridY-1; y++) {
                 for (int x=1; x<gridX-1; x++) {
-                    drawPoint(sr, x, y, 0, plotMode, contrast, loadedLevel); // front face
-                    drawPoint(sr, x, y, gridZ-1, plotMode, contrast, loadedLevel); // back face
+                    addPoint(x, y, 0, plotMode, contrast, loadedLevel); // front face
+                    addPoint(x, y, gridZ-1, plotMode, contrast, loadedLevel); // back face
                 }
             }
 
             // the boundary conditions reset the faces to the incoming flow every step, so they always show the same colour;
-            // the selected plane is drawn on top to show the flow inside the tunnel, and where clicks will add barriers
+            // the selected plane is drawn as well to show the flow inside the tunnel, and where clicks will add barriers
             if (plane > 0 && plane < gridZ-1) {
                 for (int y=1; y<gridY-1; y++) {
                     for (int x=1; x<gridX-1; x++) {
                         if (barriers[(plane*gridY + y)*gridX + x]) {continue;} // drawn with the other barriers below
-                        drawPoint(sr, x, y, plane, plotMode, contrast, loadedLevel);
+                        addPoint(x, y, plane, plotMode, contrast, loadedLevel);
                     }
                 }
             }
@@ -575,22 +585,60 @@ public class LatticeBoltzmannCFDSolver {
                 int y = (i/gridX)%gridY;
                 int z = i/(gridX*gridY);
                 if (x == 0 || y == 0 || z == 0 || x == gridX-1 || y == gridY-1 || z == gridZ-1) {continue;} // already drawn as part of a face
-                drawPoint(sr, x, y, z, plotMode, contrast, loadedLevel);
+                addPoint(x, y, z, plotMode, contrast, loadedLevel);
             }
+        }
+
+        // draw the farthest points first, so nearer points are drawn over them (the painter's algorithm)
+        sortPointsByDepth();
+        sr.begin(ShapeRenderer.ShapeType.Filled);
+        for (int k=pointCount-1; k>=0; k--) {
+            int p = (int) depthOrder[k]; // the point's number is in the bottom half of the sorted value
+            if (pointColour[p] == FIXED_BARRIER_COLOUR) {sr.setColor(Color.GRAY);} // grey rather than the 2D black, which wouldn't show on the black background
+            else if (pointColour[p] == BARRIER_COLOUR) {sr.setColor(Color.WHITE);}
+            else {sr.setColor(colours.get(pointColour[p]));}
+            sr.rect(pointX[p]-1, pointY[p]-1, 2, 2); // about the same size as a radius 1 circle, with 6 corners instead of 18
         }
         sr.end();
     }
 
-    private void drawPoint(ShapeRenderer sr, int x, int y, int z, int plotMode, float contrast, boolean loadedLevel) {
+    // works out where cell (x, y, z) appears on screen and how far it is from the camera, and saves it to be drawn once all the points are sorted
+    private void addPoint(int x, int y, int z, int plotMode, float contrast, boolean loadedLevel) {
         int i = (z*gridY + y)*gridX + x;
-        if (loadedLevel && settings.getFixedBarrierAt(x, y, z)) {sr.setColor(Color.GRAY);} // grey rather than the 2D black, which wouldn't show on the black background
-        else if (barriers[i]) {sr.setColor(Color.WHITE);}
-        else {sr.setColor(colours.get(colourIndex(i, plotMode, contrast)));} // calculates colour based on plotMode
+        int colour;
+        if (loadedLevel && settings.getFixedBarrierAt(x, y, z)) {colour = FIXED_BARRIER_COLOUR;}
+        else if (barriers[i]) {colour = BARRIER_COLOUR;}
+        else {colour = colourIndex(i, plotMode, contrast);} // calculates colour based on plotMode
 
         rotatedPoint = renderer.rotate(x-(gridX/2f), y-(gridY/2f), z-(gridZ/2f));
-        screenPos = renderer.pointProjection(rotatedPoint);
+        screenPos = renderer.pointProjection(rotatedPoint); // this also moves rotatedPoint.z to be the distance in front of the camera
         if (screenPos == null) {return;}
-        sr.rect(screenPos.x-1, screenPos.y-1, 2, 2); // about the same size as a radius 1 circle, with 6 corners instead of 18
+
+        if (pointCount == pointX.length) {
+            int size = Math.max(1024, pointCount*2);
+            pointX = Arrays.copyOf(pointX, size);
+            pointY = Arrays.copyOf(pointY, size);
+            pointDepth = Arrays.copyOf(pointDepth, size);
+            pointColour = Arrays.copyOf(pointColour, size);
+        }
+        pointX[pointCount] = screenPos.x;
+        pointY[pointCount] = screenPos.y;
+        pointDepth[pointCount] = rotatedPoint.z;
+        pointColour[pointCount] = colour;
+        pointCount += 1;
+    }
+
+    // puts the points' numbers into depthOrder, nearest first
+    private void sortPointsByDepth() {
+        if (depthOrder.length < pointCount) {
+            depthOrder = new long[pointX.length];
+        }
+        for (int p=0; p<pointCount; p++) {
+            // every depth is positive, and the bits of a positive float sort in the same order as its value, so the depth goes
+            // in the top half of a long and the point's number in the bottom half: sorting the longs then sorts the points by depth
+            depthOrder[p] = ((long) Float.floatToIntBits(pointDepth[p]) << 32) | p;
+        }
+        Arrays.parallelSort(depthOrder, 0, pointCount); // uses all the CPU cores for large numbers of points
     }
 
     public void drawBarriers() {
